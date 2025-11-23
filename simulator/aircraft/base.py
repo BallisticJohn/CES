@@ -180,13 +180,20 @@ class Aircraft(ABC):
         # Moments (simplified - can be expanded)
         # For now, we'll use damping to stabilize
         omega = self.state.angular_velocity
+
+        # Clamp angular velocity to prevent instability
+        omega_mag = omega.magnitude()
+        max_omega = 3.0  # rad/s max
+        if omega_mag > max_omega:
+            omega = omega * (max_omega / omega_mag)
+
         M_damping = Vector3(
             -0.5 * q * self.wing_area * self.wing_span * omega.x,
             -1.0 * q * self.wing_area * self.wing_chord * omega.y,
             -0.3 * q * self.wing_area * self.wing_span * omega.z
         )
 
-        # Control moments (simplified)
+        # Control moments (simplified and limited)
         M_control = Vector3(
             self.aileron * q * self.wing_area * self.wing_span * 0.1,
             self.elevator * q * self.wing_area * self.wing_chord * 0.2,
@@ -194,6 +201,12 @@ class Aircraft(ABC):
         )
 
         M_total = M_damping + M_control
+
+        # Clamp total moment to prevent numerical issues
+        M_mag = M_total.magnitude()
+        max_moment = 1e6  # Newton-meters
+        if M_mag > max_moment:
+            M_total = M_total * (max_moment / M_mag)
 
         return F_world, M_total
 
@@ -233,11 +246,28 @@ class Aircraft(ABC):
         """
         from ..simulation.integrator import RK4Integrator
 
+        # Clamp control inputs to safe ranges
+        self.throttle = np.clip(self.throttle, 0.0, 1.0)
+        self.elevator = np.clip(self.elevator, -1.0, 1.0)
+        self.aileron = np.clip(self.aileron, -1.0, 1.0)
+        self.rudder = np.clip(self.rudder, -1.0, 1.0)
+
         # Integrate one step
         self.state = RK4Integrator.step(
             self.state, dt,
             lambda s, t: self.compute_state_derivative(s, t)
         )
+
+        # Clamp angular velocity after integration
+        omega_mag = self.state.angular_velocity.magnitude()
+        max_omega = 3.0  # rad/s
+        if omega_mag > max_omega:
+            scale = max_omega / omega_mag
+            self.state.angular_velocity = self.state.angular_velocity * scale
+
+        # Sanity check for numerical stability
+        if not np.isfinite(self.state.position.magnitude()):
+            raise RuntimeError("Numerical instability detected in aircraft state")
 
     def get_performance_metrics(self) -> dict:
         """Get current performance metrics"""
