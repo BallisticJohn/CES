@@ -1,7 +1,5 @@
-"""Visualization and analysis tools (placeholder)"""
+"""Visualization and analysis tools"""
 
-# To be implemented:
-# - 3D trajectory plotting
-# - Energy-maneuverability diagrams
-# - Statistical analysis plots
-# - Interactive visualization
+from .plots import TrajectoryPlotter, PerformancePlotter, EngagementAnalyzer
+
+__all__ = ['TrajectoryPlotter', 'PerformancePlotter', 'EngagementAnalyzer']
