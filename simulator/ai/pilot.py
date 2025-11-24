@@ -148,7 +148,14 @@ class PilotAI:
         vel_target = self.target_aircraft.state.velocity
 
         # Get desired heading and pitch from maneuver
-        if self.current_maneuver == 'pure_pursuit':
+        if self.current_maneuver == 'none':
+            # Fly straight - completely neutral controls (head-on merge)
+            # Accept altitude loss to maintain perfectly straight trajectory
+            self.aircraft.aileron = 0.0
+            self.aircraft.rudder = 0.0
+            self.aircraft.elevator = 0.0
+            return  # Skip the normal control logic
+        elif self.current_maneuver == 'pure_pursuit':
             # For pure pursuit, if target is more than 90° off nose, pull hard!
             aspect = tactical['aspect']
             if aspect > np.radians(90):
@@ -195,6 +202,7 @@ class PilotAI:
     def _set_controls_for_direction(self, desired_dir: Vector3, desired_pitch: float):
         """
         Set elevator and aileron to point aircraft in desired direction
+        Uses proper coordinated turn technique: bank + pull
 
         Args:
             desired_dir: Desired direction vector (world frame)
@@ -206,50 +214,52 @@ class PilotAI:
         # Convert desired direction to body frame
         desired_dir_body = orientation.conjugate().rotate_vector(desired_dir)
 
-        # Calculate errors in body frame
+        # Calculate heading error in horizontal plane (body frame)
         # X = forward, Y = right, Z = down
-
-        # Heading error: atan2(Y, X) - positive right
         heading_error = np.arctan2(desired_dir_body.y, desired_dir_body.x)
 
-        # Pitch error: arctan2(-Z, X) - positive up
+        # Get current bank angle from orientation (roll)
+        # Extract Euler angles from quaternion
+        # For roll, we can use the rotation of the Y-axis
+        up_vec = orientation.rotate_vector(Vector3(0, 0, -1))  # Aircraft's up vector
+        current_roll = np.arctan2(up_vec.y, -up_vec.z)  # Bank angle
+
+        # Determine desired bank angle based on heading error
+        # For dogfighting, use aggressive bank angles
+        if abs(heading_error) > np.radians(10):
+            # Need to turn - use max bank (60-80 degrees)
+            desired_bank = np.sign(heading_error) * np.radians(70)
+            # Limit based on heading error magnitude
+            max_bank = min(abs(heading_error) * 2.0, np.radians(80))
+            desired_bank = np.sign(heading_error) * max_bank
+        else:
+            # Small heading error - wings level
+            desired_bank = 0.0
+
+        # Aileron to achieve desired bank
+        bank_error = desired_bank - current_roll
+        self.aircraft.aileron = np.clip(bank_error * 2.0, -1.0, 1.0)
+
+        # Elevator: pull to turn when banked, plus pitch correction
+        # When banked, need to pull to turn
+        base_elevator = 0.0
+
+        # If significantly banked, pull to turn
+        if abs(current_roll) > np.radians(20):
+            # Pull harder for tighter turns
+            base_elevator = 0.6
+
+        # Add pitch correction
         current_pitch = np.arctan2(-desired_dir_body.z,
                                    np.sqrt(desired_dir_body.x**2 + desired_dir_body.y**2))
         pitch_error = desired_pitch - current_pitch
 
-        # Set controls with gains and rate limiting
-        # Aileron for heading (roll to turn)
-        desired_aileron = heading_error * self.heading_gain
+        pitch_correction = pitch_error * 1.0
 
-        # For large heading errors (reversals), allow more aggressive control
-        if abs(heading_error) > np.radians(90):
-            # Need to reverse direction, be more aggressive
-            desired_aileron = np.sign(heading_error) * 1.0
-            max_rate = 1.0  # Allow faster rate for reversals
-        else:
-            # Rate limit to prevent violent control inputs
-            max_rate = 0.5
+        self.aircraft.elevator = np.clip(base_elevator + pitch_correction, -0.8, 0.8)
 
-        current_aileron = self.aircraft.aileron
-        delta = np.clip(desired_aileron - current_aileron, -max_rate, max_rate)
-        self.aircraft.aileron = np.clip(current_aileron + delta, -1.0, 1.0)
-
-        # Elevator for pitch - allow full deflection for aggressive maneuvers
-        desired_elevator = pitch_error * self.pitch_gain
-
-        # For large pitch changes (reversals), be more aggressive
-        if abs(pitch_error) > np.radians(20):
-            desired_elevator = np.sign(pitch_error) * 0.8
-
-        current_elevator = self.aircraft.elevator
-        delta = np.clip(desired_elevator - current_elevator, -max_rate, max_rate)
-        self.aircraft.elevator = np.clip(current_elevator + delta, -0.8, 0.8)
-
-        # Rudder for coordination (simplified, very gentle)
-        self.aircraft.rudder = np.clip(
-            -heading_error * 0.1,  # Slightly more rudder
-            -0.5, 0.5
-        )
+        # Rudder for coordination - counteract adverse yaw
+        self.aircraft.rudder = np.clip(-self.aircraft.aileron * 0.3, -0.5, 0.5)
 
     def _manage_energy(self, tactical: dict):
         """

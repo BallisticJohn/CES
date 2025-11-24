@@ -303,6 +303,15 @@ class BFMManeuvers:
         # Bandit's angle off our tail (are we defensive?)
         bandit_aot = TacticalGeometry.get_angle_off_tail(pos_target, pos_self, vel_self)
 
+        # HEAD-ON MERGE: If we're nose-on and closing fast, fly straight!
+        # Use HCA (heading crossing angle) instead of aspect - more robust
+        # HCA ≈ 180° means opposite headings (head-on)
+        # Note: closure is NEGATIVE when closing (despite what comment in code says)
+        if hca > np.radians(150) and closure < -150 and range_to_target > 800:
+            # Head-on merge in progress - maintain current heading
+            # Just point straight ahead (no maneuvering)
+            return 'none'  # Special case: fly straight
+
         # CRITICAL: Check if we just passed and are opening
         # High aspect + negative closure = we passed each other
         if aspect > np.radians(120) and closure < -50 and range_to_target < 8000:

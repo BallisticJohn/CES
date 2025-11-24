@@ -127,6 +127,14 @@ class Aircraft(ABC):
             CD = self.aero_coeffs.get_CD(CL, mach)
             CY = AeroCoefficients.side_force_coefficient(beta)
 
+        # Add direct elevator effect on CL (elevator adds effective camber)
+        # For dogfighting, elevator must be able to generate high-g turns
+        # F-86 can pull 6-7g, which requires CL ≈ 1.0-1.2 at high speeds
+        # Assuming elevator range -1 to +1 represents ±25° = ±0.436 rad
+        # Increased effectiveness to allow realistic max-g maneuvering
+        elevator_effect = 0.8 * (self.elevator * 0.436)  # ~0.35 max delta CL
+        CL += elevator_effect
+
         return CL, CD, CY
 
     def compute_forces_and_moments(self) -> tuple[Vector3, Vector3]:
@@ -204,11 +212,8 @@ class Aircraft(ABC):
 
         M_total = M_damping + M_control
 
-        # Clamp total moment to prevent numerical issues
-        M_mag = M_total.magnitude()
-        max_moment = 1e6  # Newton-meters
-        if M_mag > max_moment:
-            M_total = M_total * (max_moment / M_mag)
+        # Note: Removed moment clamping to allow full control authority
+        # Angular velocity is already clamped to prevent instability
 
         return F_world, M_total
 
