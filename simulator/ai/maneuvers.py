@@ -177,6 +177,7 @@ class BFMManeuvers:
                        break_direction: str = 'into') -> Tuple[Vector3, float, float]:
         """
         Defensive break turn: Hard turn to defeat attack
+        Also used for reversals after head-on pass
 
         Args:
             pos_self: Own position
@@ -200,8 +201,9 @@ class BFMManeuvers:
             desired_heading = (pos_self - pos_bandit).normalized()
             roll = np.radians(90)
 
-        # Level turn initially
-        pitch = 0.0
+        # Hard pull with pitch for max turn rate
+        # Combine with roll for rapid reversal
+        pitch = np.radians(30)  # Significant nose-up for turn
 
         return desired_heading, pitch, roll
 

@@ -47,9 +47,10 @@ class F86Sabre(Aircraft):
         self.max_thrust_sealevel = 26300.0   # N (5,910 lbf)
         self.max_thrust = self.max_thrust_sealevel
 
-        # Moment of inertia (estimated from similar aircraft)
-        # [Ixx, Iyy, Izz] in kg·m²
-        self.inertia = np.diag([8000.0, 15000.0, 20000.0])
+        # Moment of inertia (based on similar aircraft data)
+        # [Ixx (roll), Iyy (pitch), Izz (yaw)] in kg·m²
+        # Reduced to realistic values for responsive maneuvering
+        self.inertia = np.diag([3500.0, 8000.0, 10000.0])
 
         # Aerodynamic coefficients
         self.aero_coeffs = F86AeroCoefficients()

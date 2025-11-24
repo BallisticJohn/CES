@@ -47,9 +47,10 @@ class MiG15(Aircraft):
         self.max_thrust_sealevel = 26500.0   # N (5,952 lbf)
         self.max_thrust = self.max_thrust_sealevel
 
-        # Moment of inertia (estimated, lighter and smaller than F-86)
-        # [Ixx, Iyy, Izz] in kg·m²
-        self.inertia = np.diag([6000.0, 11000.0, 15000.0])
+        # Moment of inertia (lighter and smaller than F-86)
+        # [Ixx (roll), Iyy (pitch), Izz (yaw)] in kg·m²
+        # Reduced to realistic values for nimble maneuvering
+        self.inertia = np.diag([2800.0, 6500.0, 8000.0])
 
         # Aerodynamic coefficients
         self.aero_coeffs = MiG15AeroCoefficients()

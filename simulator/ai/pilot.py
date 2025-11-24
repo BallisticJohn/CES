@@ -149,9 +149,18 @@ class PilotAI:
 
         # Get desired heading and pitch from maneuver
         if self.current_maneuver == 'pure_pursuit':
-            desired_dir, desired_pitch = BFMManeuvers.pure_pursuit(
-                pos_self, vel_self, pos_target
-            )
+            # For pure pursuit, if target is more than 90° off nose, pull hard!
+            aspect = tactical['aspect']
+            if aspect > np.radians(90):
+                # Target is behind us, execute hard reversal
+                # This is effectively a defensive break to reverse
+                desired_dir, desired_pitch, _ = BFMManeuvers.defensive_break(
+                    pos_self, vel_self, pos_target, vel_target, 'into'
+                )
+            else:
+                desired_dir, desired_pitch = BFMManeuvers.pure_pursuit(
+                    pos_self, vel_self, pos_target
+                )
         elif self.current_maneuver == 'lead_pursuit':
             desired_dir, desired_pitch = BFMManeuvers.lead_pursuit(
                 pos_self, vel_self, pos_target, vel_target
@@ -225,8 +234,13 @@ class PilotAI:
         delta = np.clip(desired_aileron - current_aileron, -max_rate, max_rate)
         self.aircraft.aileron = np.clip(current_aileron + delta, -1.0, 1.0)
 
-        # Elevator for pitch
+        # Elevator for pitch - allow full deflection for aggressive maneuvers
         desired_elevator = pitch_error * self.pitch_gain
+
+        # For large pitch changes (reversals), be more aggressive
+        if abs(pitch_error) > np.radians(20):
+            desired_elevator = np.sign(pitch_error) * 0.8
+
         current_elevator = self.aircraft.elevator
         delta = np.clip(desired_elevator - current_elevator, -max_rate, max_rate)
         self.aircraft.elevator = np.clip(current_elevator + delta, -0.8, 0.8)
