@@ -223,13 +223,13 @@ class R77(Missile):
                  target_id: str, name: str = "R-77"):
         super().__init__(name, launch_pos, launch_vel, target_id)
 
-        # R-77 performance (slightly inferior to AIM-120C)
-        self.max_speed = 1000.0  # m/s (~Mach 3.5)
-        self.boost_acceleration = 350.0  # Good but not as high as AMRAAM
-        self.boost_time = 4.5  # Slightly longer burn
-        self.max_range = 80000  # 80 km (vs maneuvering target, less than AIM-120)
-        self.no_escape_range = 25000  # 25 km (smaller than AMRAAM)
-        self.max_g = 35.0  # 35g (slightly less agile)
+        # R-77 performance (comparable speed to AIM-120C, shorter range)
+        self.max_speed = 1300.0  # m/s (~Mach 4-4.5 at altitude)
+        self.boost_acceleration = 380.0  # High thrust motor
+        self.boost_time = 4.0  # Similar to AMRAAM
+        self.max_range = 80000  # 80 km (basic R-77, vs maneuvering target)
+        self.no_escape_range = 25000  # 25 km (smaller than AMRAAM due to shorter range)
+        self.max_g = 35.0  # 35g maneuvering capability
 
         # Active radar homing
         self.midcourse_distance = 20000  # 20 km - goes active (later than AMRAAM)
