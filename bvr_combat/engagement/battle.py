@@ -49,6 +49,12 @@ class Engagement:
         self.blue_kills = 0
         self.red_kills = 0
 
+        # History for visualization
+        self.blue_history = [[] for _ in blue_force]  # Position history
+        self.red_history = [[] for _ in red_force]
+        self.missile_history = []  # List of missile trajectories
+        self.active_missile_tracks = {}  # missile id -> trajectory list
+
     def log_event(self, event_type: str, **kwargs):
         """Log an engagement event"""
         event = {
@@ -278,6 +284,20 @@ class Engagement:
         if not self.engagement_active:
             return
 
+        # Record positions for visualization
+        for i, aircraft in enumerate(self.blue_force):
+            self.blue_history[i].append((aircraft.position.x, aircraft.position.y, aircraft.position.z))
+
+        for i, aircraft in enumerate(self.red_force):
+            self.red_history[i].append((aircraft.position.x, aircraft.position.y, aircraft.position.z))
+
+        # Record missile positions
+        for missile in self.missiles:
+            missile_id = id(missile)
+            if missile_id not in self.active_missile_tracks:
+                self.active_missile_tracks[missile_id] = []
+            self.active_missile_tracks[missile_id].append((missile.position.x, missile.position.y, missile.position.z))
+
         # Update detections
         self.update_detections()
 
@@ -290,6 +310,13 @@ class Engagement:
 
         # Update missiles
         self.update_missiles()
+
+        # Clean up finished missile tracks
+        inactive_missiles = [mid for mid in self.active_missile_tracks.keys()
+                           if mid not in [id(m) for m in self.missiles]]
+        for mid in inactive_missiles:
+            self.missile_history.append(self.active_missile_tracks[mid])
+            del self.active_missile_tracks[mid]
 
         # Advance time
         self.time += self.dt

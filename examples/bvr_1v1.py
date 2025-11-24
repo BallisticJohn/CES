@@ -16,6 +16,8 @@ from bvr_combat.aircraft.f16 import F16C
 from bvr_combat.aircraft.mig29 import MiG29
 from bvr_combat.engagement.battle import Engagement
 from bvr_combat.utils import Vector3, feet_to_meters, knots_to_mps
+from bvr_combat.visualization import plot_engagement, plot_timeline
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -146,6 +148,22 @@ def main():
         print("Mutual kill or survival")
 
     print()
+
+    # Generate visualizations
+    print("=" * 80)
+    print("GENERATING VISUALIZATIONS")
+    print("=" * 80)
+
+    # Engagement plot
+    fig1 = plot_engagement(blue_force, red_force, engagement.events,
+                          engagement.blue_history, engagement.red_history,
+                          engagement.missile_history)
+
+    # Timeline plot
+    fig2 = plot_timeline(engagement.events, results['duration'])
+
+    print("Displaying plots... (close windows to exit)")
+    plt.show()
 
 
 if __name__ == "__main__":
