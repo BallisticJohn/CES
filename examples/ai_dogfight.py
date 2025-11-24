@@ -41,8 +41,8 @@ class AIEngagementSimulation(EngagementSimulation):
         time = 0.0
         self.history['time'] = []
 
-        print(f"{'Time':>6} {'F-86 Maneuver':<20} {'MiG-15 Maneuver':<20} {'Range':>8} {'Separation':>10}")
-        print("-" * 80)
+        print(f"{'Time':>6} {'F-86 Maneuver':<20} {'MiG-15 Maneuver':<20} {'Range':>8} {'Separation':>10} {'F-86 Ctrl':<12} {'MiG Ctrl':<12}")
+        print("-" * 110)
 
         while time < self.max_time:
             # Record state
@@ -59,12 +59,18 @@ class AIEngagementSimulation(EngagementSimulation):
             # Print status every 5 seconds
             if int(time) % 5 == 0 and abs(time - int(time)) < self.dt:
                 tactical1 = self.pilot1._assess_situation()
+                tactical2 = self.pilot2._assess_situation()
                 range_nm = tactical1['range'] / 1852  # nautical miles
                 separation_m = self.get_separation(-1)
 
+                # Show control inputs for debugging
+                f86_controls = f"A:{self.aircraft1.aileron:+.2f} E:{self.aircraft1.elevator:+.2f}"
+                mig_controls = f"A:{self.aircraft2.aileron:+.2f} E:{self.aircraft2.elevator:+.2f}"
+
                 print(f"{time:6.1f}s {self.pilot1.current_maneuver:<20} "
                       f"{self.pilot2.current_maneuver:<20} "
-                      f"{range_nm:7.2f}nm {separation_m:8.0f}m")
+                      f"{range_nm:7.2f}nm {separation_m:8.0f}m "
+                      f"[{f86_controls}] [{mig_controls}]")
 
             # Check termination
             if self._check_termination():

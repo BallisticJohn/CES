@@ -183,21 +183,23 @@ class Aircraft(ABC):
 
         # Clamp angular velocity to prevent instability
         omega_mag = omega.magnitude()
-        max_omega = 3.0  # rad/s max
+        max_omega = 5.0  # rad/s max (increased from 3.0 for tighter turns)
         if omega_mag > max_omega:
             omega = omega * (max_omega / omega_mag)
 
+        # REDUCED damping to allow turns
         M_damping = Vector3(
-            -0.5 * q * self.wing_area * self.wing_span * omega.x,
-            -1.0 * q * self.wing_area * self.wing_chord * omega.y,
-            -0.3 * q * self.wing_area * self.wing_span * omega.z
+            -0.1 * q * self.wing_area * self.wing_span * omega.x,  # Reduced from 0.5
+            -0.2 * q * self.wing_area * self.wing_chord * omega.y,  # Reduced from 1.0
+            -0.1 * q * self.wing_area * self.wing_span * omega.z    # Reduced from 0.3
         )
 
-        # Control moments (simplified and limited)
+        # VERY HIGH control effectiveness for responsive dogfighting
+        # These need to be large enough to generate rapid turns
         M_control = Vector3(
-            self.aileron * q * self.wing_area * self.wing_span * 0.1,
-            self.elevator * q * self.wing_area * self.wing_chord * 0.2,
-            self.rudder * q * self.wing_area * self.wing_span * 0.08
+            self.aileron * q * self.wing_area * self.wing_span * 8.0,    # Much higher!
+            self.elevator * q * self.wing_area * self.wing_chord * 10.0,  # Much higher!
+            self.rudder * q * self.wing_area * self.wing_span * 5.0       # Much higher!
         )
 
         M_total = M_damping + M_control
@@ -260,7 +262,7 @@ class Aircraft(ABC):
 
         # Clamp angular velocity after integration
         omega_mag = self.state.angular_velocity.magnitude()
-        max_omega = 3.0  # rad/s
+        max_omega = 5.0  # rad/s (increased for tighter turns)
         if omega_mag > max_omega:
             scale = max_omega / omega_mag
             self.state.angular_velocity = self.state.angular_velocity * scale
