@@ -27,3 +27,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# BVR simulation output
+output/
