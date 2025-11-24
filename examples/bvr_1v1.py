@@ -5,7 +5,12 @@
 Demonstrates the simplified BVR combat model
 """
 import sys
-sys.path.insert(0, '/home/user/CES')
+import os
+
+# Add parent directory to path so imports work from any location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(script_dir)
+sys.path.insert(0, parent_dir)
 
 from bvr_combat.aircraft.f16 import F16C
 from bvr_combat.aircraft.mig29 import MiG29
