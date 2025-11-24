@@ -127,7 +127,8 @@ class TrajectoryPlotter:
         ax_alt.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.show(block=True)
+        plt.close('all')  # Clean up after showing
 
     @staticmethod
     def _plot_3d_interactive(times, pos1, pos2, alt1, alt2, aircraft1, aircraft2):
@@ -249,7 +250,8 @@ class PerformancePlotter:
                 ax.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.show(block=True)
+        plt.close('all')  # Clean up after showing
 
     @staticmethod
     def plot_turn_performance(aircraft, altitudes: Optional[List[float]] = None):
@@ -314,7 +316,8 @@ class PerformancePlotter:
         ax2.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.show(block=True)
+        plt.close('all')  # Clean up after showing
 
     @staticmethod
     def plot_comparative_performance(aircraft1, aircraft2,
@@ -404,7 +407,8 @@ class PerformancePlotter:
         ax.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.show(block=True)
+        plt.close('all')  # Clean up after showing
 
 
 class EngagementAnalyzer:
@@ -511,7 +515,8 @@ class EngagementAnalyzer:
         ax5.legend()
 
         plt.tight_layout()
-        plt.show()
+        plt.show(block=True)
+        plt.close('all')  # Clean up after showing
 
         # Print summary statistics
         print("\n" + "="*60)

@@ -188,18 +188,24 @@ def main():
 
     # Visualize
     print("Generating visualizations...")
-    print("(Close each plot window to continue)")
+    print()
 
-    # 3D trajectory
-    TrajectoryPlotter.plot_3d_trajectory(sim, interactive=False,
-                                        show_velocity_vectors=True)
+    # Ask before generating plots
+    response = input("Generate 3D trajectory plot? (y/n, default y): ").strip().lower()
+    if response != 'n':
+        print("Close the plot window to continue...")
+        TrajectoryPlotter.plot_3d_trajectory(sim, interactive=False,
+                                            show_velocity_vectors=True)
 
-    # Detailed analysis
-    EngagementAnalyzer.plot_engagement_analysis(sim)
+    response = input("\nGenerate detailed engagement analysis? (y/n, default y): ").strip().lower()
+    if response != 'n':
+        print("Close the plot window to continue...")
+        EngagementAnalyzer.plot_engagement_analysis(sim)
 
     # Interactive 3D
-    response = input("\nGenerate interactive 3D plot? (y/n): ").strip().lower()
+    response = input("\nGenerate interactive 3D plot (opens in browser)? (y/n, default n): ").strip().lower()
     if response == 'y':
+        print("Generating interactive plot...")
         TrajectoryPlotter.plot_3d_trajectory(sim, interactive=True)
 
     print()
