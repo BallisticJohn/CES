@@ -296,6 +296,26 @@ class BFMManeuvers:
             pos_self, vel_self, pos_target, vel_target
         )
         alt_adv = TacticalGeometry.get_altitude_advantage(pos_self, pos_target)
+        hca = TacticalGeometry.get_heading_crossing_angle(vel_self, vel_target)
+
+        # Bandit's angle off our tail (are we defensive?)
+        bandit_aot = TacticalGeometry.get_angle_off_tail(pos_target, pos_self, vel_self)
+
+        # CRITICAL: Check if we just passed and are opening
+        # High aspect + negative closure = we passed each other
+        if aspect > np.radians(120) and closure < -50 and range_to_target < 3000:
+            # We just passed! Need to reverse
+            if alt_adv > 300:
+                # We're higher, use high yo-yo to reverse
+                return 'high_yo_yo'
+            else:
+                # Execute hard reversal turn
+                return 'defensive_break'  # Use break turn mechanics to reverse hard
+
+        # OPENING: If we're separating fast at medium range, turn back
+        if closure < -100 and range_to_target > 1000 and range_to_target < 5000:
+            # Separating, need to turn around
+            return 'pure_pursuit'  # Turn hard toward target
 
         # Decision tree for maneuver selection
 
@@ -315,7 +335,6 @@ class BFMManeuvers:
                 return 'lead_pursuit'
 
         # DEFENSIVE (target behind us)
-        bandit_aot = TacticalGeometry.get_angle_off_tail(pos_target, pos_self, vel_self)
         if TacticalGeometry.is_defensive(bandit_aot, range_to_target):
             if range_to_target < 800:
                 # Close defensive, break turn
@@ -337,5 +356,5 @@ class BFMManeuvers:
                 # Good speed, pure turn
                 return 'pure_pursuit'
         else:
-            # Extend and reset
-            return 'lead_pursuit'
+            # Extending, turn back
+            return 'pure_pursuit'

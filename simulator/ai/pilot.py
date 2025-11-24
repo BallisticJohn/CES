@@ -46,8 +46,8 @@ class PilotAI:
         self.target_aircraft: Optional['Aircraft'] = None
 
         # Control gains (tuned for responsiveness and stability)
-        self.heading_gain = 0.5 * skill_level
-        self.pitch_gain = 0.3 * skill_level
+        self.heading_gain = 1.0 * skill_level  # Increased for better turns
+        self.pitch_gain = 0.5 * skill_level
         self.altitude_gain = 0.1
         self.speed_gain = 0.1
 
@@ -211,11 +211,19 @@ class PilotAI:
         # Set controls with gains and rate limiting
         # Aileron for heading (roll to turn)
         desired_aileron = heading_error * self.heading_gain
-        # Rate limit to prevent violent control inputs
-        max_rate = 0.5  # Max change per update
+
+        # For large heading errors (reversals), allow more aggressive control
+        if abs(heading_error) > np.radians(90):
+            # Need to reverse direction, be more aggressive
+            desired_aileron = np.sign(heading_error) * 1.0
+            max_rate = 1.0  # Allow faster rate for reversals
+        else:
+            # Rate limit to prevent violent control inputs
+            max_rate = 0.5
+
         current_aileron = self.aircraft.aileron
         delta = np.clip(desired_aileron - current_aileron, -max_rate, max_rate)
-        self.aircraft.aileron = np.clip(current_aileron + delta, -0.8, 0.8)
+        self.aircraft.aileron = np.clip(current_aileron + delta, -1.0, 1.0)
 
         # Elevator for pitch
         desired_elevator = pitch_error * self.pitch_gain
@@ -225,8 +233,8 @@ class PilotAI:
 
         # Rudder for coordination (simplified, very gentle)
         self.aircraft.rudder = np.clip(
-            -heading_error * 0.05,
-            -0.3, 0.3
+            -heading_error * 0.1,  # Slightly more rudder
+            -0.5, 0.5
         )
 
     def _manage_energy(self, tactical: dict):
