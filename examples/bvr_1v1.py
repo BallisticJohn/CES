@@ -162,8 +162,33 @@ def main():
     # Timeline plot
     fig2 = plot_timeline(engagement.events, results['duration'])
 
-    print("Displaying plots... (close windows to exit)")
-    plt.show()
+    # Try to display, or save to files if no display available
+    try:
+        # Check if we can display interactively
+        backend = plt.get_backend()
+        if 'agg' in backend.lower():
+            raise RuntimeError("Non-interactive backend")
+
+        print("Displaying plots... (close windows to exit)")
+        plt.show()
+    except (RuntimeError, Exception):
+        # Save to files instead
+        print("No display available - saving plots to files...")
+
+        output_dir = os.path.join(parent_dir, 'output')
+        os.makedirs(output_dir, exist_ok=True)
+
+        engagement_file = os.path.join(output_dir, 'engagement_plot.png')
+        timeline_file = os.path.join(output_dir, 'timeline_plot.png')
+
+        fig1.savefig(engagement_file, dpi=150, bbox_inches='tight')
+        fig2.savefig(timeline_file, dpi=150, bbox_inches='tight')
+
+        print(f"  Engagement plot saved to: {engagement_file}")
+        print(f"  Timeline plot saved to: {timeline_file}")
+        print()
+
+        plt.close('all')
 
 
 if __name__ == "__main__":
