@@ -431,9 +431,9 @@ class EngagementAnalyzer:
         alt2 = np.array(engagement_sim.history['aircraft2']['altitude'])
 
         # Calculate metrics
-        separations = [np.linalg.norm(pos1[i] - pos2[i]) for i in range(len(times))]
-        speeds1 = [np.linalg.norm(vel1[i]) for i in range(len(times))]
-        speeds2 = [np.linalg.norm(vel2[i]) for i in range(len(times))]
+        separations = np.array([np.linalg.norm(pos1[i] - pos2[i]) for i in range(len(times))])
+        speeds1 = np.array([np.linalg.norm(vel1[i]) for i in range(len(times))])
+        speeds2 = np.array([np.linalg.norm(vel2[i]) for i in range(len(times))])
 
         # Aspect angles
         aspects1 = []
@@ -442,6 +442,8 @@ class EngagementAnalyzer:
             asp1, asp2 = engagement_sim.get_aspect_angle(i)
             aspects1.append(asp1)
             aspects2.append(asp2)
+        aspects1 = np.array(aspects1)
+        aspects2 = np.array(aspects2)
 
         fig = plt.figure(figsize=(16, 10))
         gs = GridSpec(3, 2, figure=fig)
