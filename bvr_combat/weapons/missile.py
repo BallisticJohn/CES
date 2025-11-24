@@ -116,30 +116,54 @@ class Missile:
         speed = self.velocity.magnitude()
         self.energy = (speed ** 2) / 2.0 + 9.81 * altitude
 
-    def check_proximity(self, target_pos: Vector3, target_speed: float) -> Optional[float]:
+    def check_proximity(self, target_pos: Vector3, target_vel: Vector3,
+                       prev_missile_pos: Vector3) -> Optional[float]:
         """
         Check if missile is close enough to detonate
+
+        Checks both current distance AND closest approach during last timestep
+        to avoid skipping past target at high speeds
 
         Returns:
             Probability of kill if within lethal radius, None otherwise
         """
-        distance = self.position.distance_to(target_pos)
+        current_distance = self.position.distance_to(target_pos)
 
         # Proximity fuse activation radius
-        fuse_radius = 20.0  # meters
+        # Larger radius to account for high-speed intercepts
+        fuse_radius = 50.0  # meters (increased from 20m)
 
-        if distance < fuse_radius:
-            # Calculate Pk based on miss distance and closing speed
-            # Closer = higher Pk, faster = higher Pk
-            pk_base = 0.8  # Base Pk at center
-            pk_distance = pk_base * (1.0 - distance / fuse_radius)
+        # Also check closest approach during the timestep
+        # This prevents missiles from skipping past targets
+        missile_movement = self.position - prev_missile_pos
+        to_target_start = target_pos - prev_missile_pos
 
-            # Boost Pk for high closing speed
+        # Project target onto missile's movement vector
+        if missile_movement.magnitude() > 1e-6:
+            t = to_target_start.dot(missile_movement) / (missile_movement.magnitude() ** 2)
+            t = np.clip(t, 0.0, 1.0)  # Clamp to this timestep
+
+            closest_point = prev_missile_pos + missile_movement * t
+            closest_distance = closest_point.distance_to(target_pos)
+        else:
+            closest_distance = current_distance
+
+        # Use the smaller of current or closest approach
+        miss_distance = min(current_distance, closest_distance)
+
+        if miss_distance < fuse_radius:
+            # Calculate Pk based on miss distance
+            # Closer = higher Pk
+            pk_base = 0.85  # Base Pk for direct hit
+            pk_miss = pk_base * (1.0 - (miss_distance / fuse_radius) ** 2)
+
+            # Boost Pk for high closing speed (better fragmentation)
+            target_speed = target_vel.magnitude()
             closing_speed = self.velocity.magnitude() + target_speed
-            if closing_speed > 500:  # High speed intercept
-                pk_distance *= 1.2
+            if closing_speed > 800:  # Very high speed intercept
+                pk_miss *= 1.15
 
-            return np.clip(pk_distance, 0.0, 0.95)
+            return np.clip(pk_miss, 0.0, 0.95)
 
         return None
 

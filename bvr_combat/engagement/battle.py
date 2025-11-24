@@ -200,11 +200,14 @@ class Engagement:
                 missile.active = False
                 continue
 
+            # Save previous position for proximity check
+            prev_pos = Vector3(missile.position.x, missile.position.y, missile.position.z)
+
             # Update missile guidance
             missile.update(self.dt, target.position, target.velocity)
 
-            # Check for proximity kill
-            pk = missile.check_proximity(target.position, target.get_speed())
+            # Check for proximity kill (with previous position)
+            pk = missile.check_proximity(target.position, target.velocity, prev_pos)
 
             if pk is not None:
                 # Missile within lethal radius
